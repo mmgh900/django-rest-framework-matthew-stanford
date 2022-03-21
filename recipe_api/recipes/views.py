@@ -12,7 +12,10 @@ class RecipeCreateView(generics.CreateAPIView):
     permissions_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        if (self.request.user.is_authenticated):
+            serializer.save(author=self.request.user)
+        else:
+            raise exceptions.PermissionDenied
 
 
 class RecipeListView(generics.ListAPIView):
