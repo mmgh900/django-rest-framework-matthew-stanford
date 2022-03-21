@@ -14,7 +14,7 @@ class ListCreateRecipes(generics.ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
 
-        
+
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
@@ -22,7 +22,7 @@ class RetrieveUpdateDestroyRecipe (generics.RetrieveUpdateDestroyAPIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         # Note the use of `get_queryset()` instead of `self.queryset`
         queryset = self.get_queryset()
         serializer = RecipeDetailSerializer(queryset, many=True)
