@@ -1,44 +1,48 @@
-from urllib import request
 from rest_framework import generics, permissions
+
+from recipe_api.authentication import BearerAuthentication
 
 from .models import Ingredient, Recipe, UpVote
 from .serializers import IngredientSerializer, RecipeDetailSerializer, RecipeSerializer, UpVoteSerializer
 from rest_framework import exceptions
+from rest_framework.response import Response
 
-
-class RecipeCreateView(generics.CreateAPIView):
+class ListCreateRecipes(generics.ListCreateAPIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permissions_classes = [permissions.IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+        
     def perform_create(self, serializer):
-        if (self.request.user.is_authenticated):
-            serializer.save(author=self.request.user)
-        else:
-            raise exceptions.PermissionDenied
+        serializer.save(author=self.request.user)
 
-
-class RecipeListView(generics.ListAPIView):
+class RetrieveUpdateDestroyRecipe (generics.RetrieveUpdateDestroyAPIView):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permissions_classes = [permissions.AllowAny]
 
+    def get(self, request):
+        # Note the use of `get_queryset()` instead of `self.queryset`
+        queryset = self.get_queryset()
+        serializer = RecipeDetailSerializer(queryset, many=True)
+        return Response(serializer.data)
+            
+    def delete(self, request, *args, **kwargs):
+        recipe = Recipe.objects.filter(
+            author=request.user, pk=kwargs['pk'])
+        if recipe.exists:
+            return self.destroy(request, *args, **kwargs)
+        else:
+            raise exceptions.PermissionDenied(
+                "This is not your recipe, so you can't delete it!")
 
-class IngredientListView(generics.ListAPIView):
+class ListCreateIngredients(generics.ListAPIView):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    premission_class = [permissions.AllowAny]
 
-
-class IngredientCreateView(generics.CreateAPIView):
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
-    premission_class = [permissions.IsAuthenticated]
-
-
-class UpVoteCreateView(generics.CreateAPIView):
+class CreateUpvote(generics.CreateAPIView):
     serializer_class = UpVoteSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -52,23 +56,3 @@ class UpVoteCreateView(generics.CreateAPIView):
         recipe = Recipe.objects.get(pk=self.kwargs['pk'])
         serializer.save(user=user, recipe=recipe)
 
-
-class RecipeDetailedView(generics.RetrieveAPIView):
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeDetailSerializer
-    permission_classes = [permissions.AllowAny]
-
-
-class RecipeUpdateView (generics.RetrieveUpdateDestroyAPIView):
-    queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    permissions_classes = [permissions.IsAuthenticated]
-
-    def delete(self, request, *args, **kwargs):
-        recipe = Recipe.objects.filter(
-            author=self.request.user, pk=kwargs['pk'])
-        if recipe.exists:
-            return self.destroy(request, *args, **kwargs)
-        else:
-            raise exceptions.ValidationError(
-                "This is not your recipe, so you can't delete it!")

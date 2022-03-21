@@ -26,6 +26,7 @@ class UserRegistraitionView(generics.CreateAPIView):
 
 class LoginView(APIView):
     serializer_class = AuthTokenSerializer
-
+    permission_classes = [permissions.AllowAny]
+    
     def post(self, request):
         return obtain_auth_token(request= request._request)
